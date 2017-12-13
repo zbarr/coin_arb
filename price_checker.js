@@ -1,126 +1,127 @@
 const request = require('request');
-const gdax = require('gdax');
-const gdax_callback = (error, response, data) => {
-    console.log(data.price);
-}
-const btfx_callback = (error, response, data) => {
-    var btfx_obj = JSON.parse(data);
-    console.log(btfx_obj);
-}
-const btfx_url = "https://api.bitfinex.com/v1";
-var gdaxPriceArray = {}
-var btfxPriceArray = {}
-var gdaxProductArray = ['LTC-BTC', 'ETH-BTC', 'LTC-USD', 'BTC-USD', 'ETH-USD']
-var btfxProductArray = [
-    ['ltc', 'btc'],
-    ['ltc', 'usd'],
-    ['btc', 'usd'],
-    ['eth', 'btc'],
-    ['eth', 'usd']
-]
-initGdaxPriceArray();
-initBtfxPriceArray();
-setInterval(get_all_prices, 5000);
+const gdaxApi = require('gdax');
+const btrxApi = require('node-bittrex-api');
 
-function initGdaxPriceArray() {
-    for (i = 0; i < gdaxProductArray.length; i++) {
-        gdaxPriceArray[gdaxProductArray[i]] = []
+const btrx_url = "https://bittrex.com/api/v1.1/public/getticker/";
+
+var gdaxPrices = {}
+var btrxPrices = {}
+var gdaxSymbols = ['LTC-BTC', 'ETH-BTC', 'LTC-USD', 'BTC-USD', 'ETH-USD']
+var btrxSymbols = ['BTC-LTC', 'BTC-ETH', 'USDT-LTC', 'USDT-BTC', 'USDT-ETH', 'ETH-LTC']
+
+var gdax = new Object()
+gdax.symbols = gdaxSymbols
+gdax.prices = gdaxPrices
+gdax.takerFee = .0025
+gdax.makerFee = 0
+
+var btrx = new Object()
+btrx.symbols = btrxSymbols
+btrx.prices = btrxPrices
+btrx.takerFee = .0025
+btrx.makerFee = .0025
+
+var count = 0
+
+//var lbTrade = (getLastPrice(gdax, 'LTC-BTC')/getLastPrice(btrx, 'BTC-LTC'))*.9975*.9975
+
+init();
+setInterval(printer, 5000);
+
+
+function init() {
+    initPrices(gdax);
+    initPrices(btrx);
+}
+
+function printer() {
+    //Running
+    fetchExchangePrices(gdax)
+    fetchExchangePrices(btrx)
+
+    //Printing
+    if (count > 0) {
+        console.log("\n----- GDAX Prices -----")
+        console.log(getLastPrices(gdax))
+        console.log("\n----- BTRX Prices -----")
+        console.log(getLastPrices(btrx))
+        console.log("\nGDAX/BTRX LTC/BTC Ratio: " + getDiscrepency(0))
+        console.log("\nGDAX/BTRX ETH/BTC Ratio: " + getDiscrepency(1))
+        console.log("\nRound Trip $1000 LTC Profit (No fees): " + ((1000 * getDiscrepency(0))-1000))
+        console.log("\nRound Trip $200 LTC Profit (No fees): " + ((200 * getDiscrepency(0))-200))
+        console.log("\nGDAX Round Trip $200 Trade (With fees): " + (((((200 / getLastPrice(gdax, 'BTC-USD')) * .9975) / getLastPrice(gdax, 'LTC-BTC')) * .9975) * getLastPrice(gdax, 'LTC-USD')))
+        console.log("\nRound Trip $200 USD-LTC-BTC-LTC-USD Trade (With Taker Fees): " + (((((((200 / getLastPrice(gdax, 'LTC-USD')) * .9975) * getLastPrice(gdax, 'LTC-BTC')) * .9975) / getLastPrice(btrx, 'BTC-LTC')) * .9975) * getLastPrice(gdax, 'LTC-USD')) * .9975)
+        console.log("\nRound Trip $1000 USD-LTC-BTC-LTC-USD Trade (With Taker Fees): " + (((((((1000 / getLastPrice(gdax, 'LTC-USD')) * .9975) * getLastPrice(gdax, 'LTC-BTC')) * .9975) / getLastPrice(btrx, 'BTC-LTC')) * .9975) * getLastPrice(gdax, 'LTC-USD')) * .9975)
+        console.log("\n3 Trip $1000 USD-(LTC-BTC-LTC)*3-USD Trade (With Taker Fees): " + (((1000 / getLastPrice(gdax, 'LTC-USD')) * .9975) * getLbTrade()*getLbTrade()*getLbTrade() * getLastPrice(gdax, 'LTC-USD')) * .9975)
+        console.log("\n3 Trip $200 USD-(LTC-BTC-LTC)*3-USD Trade (With Taker Fees): " + (((200 / getLastPrice(gdax, 'LTC-USD')) * .9975) * getLbTrade()*getLbTrade()*getLbTrade() * getLastPrice(gdax, 'LTC-USD')) * .9975)
+    }
+    count++;
+}
+
+function getLbTrade() {
+    return (getLastPrice(gdax, 'LTC-BTC')/getLastPrice(btrx, 'BTC-LTC'))*.9975*.9975
+}
+
+function initPrices(exchange) {
+    for (i = 0; i < exchange.symbols.length; i++) {
+        exchange.prices[exchange.symbols[i]] = []
     }
 }
 
-function initBtfxPriceArray() {
-    for (i = 0; i < btfxProductArray.length; i++) {
-        btfxPriceArray[(btfxProductArray[i][0] + "-" + btfxProductArray[i][1]).toUpperCase()] = []
+function fetchPrice(exchange, symbol) {
+    if (exchange == gdax) {
+        fetchGdaxPrice(symbol)
+    }
+    else if (exchange == btrx){
+        fetchBtrxPrice(symbol)
+    }
+    else console.log("Invalid Exchange")
+}
+
+
+function fetchExchangePrices(exchange) {
+    for (i = 0; i < exchange.symbols.length; i++) {
+        fetchPrice(exchange, exchange.symbols[i])
     }
 }
 
-function get_gdax_prices(product) {
-    var publicClient = new gdax.PublicClient(product);
+function fetchGdaxPrice(symbol) {
+    var publicClient = new gdaxApi.PublicClient(symbol);
     publicClient.getProductTicker(function(error, response, data) {
-        gdaxPriceArray[product].push(data.price)
+        gdaxPrices[symbol].push(data.price)
+        //console.log(symbol + ": " + gdaxPrices[symbol])
     })
 }
 
-function get_btfx_prices(product) {
-    request.get(btfx_url + '/pubticker/' + product[0] + "-" + product[1], function(error, response, data) {
-        btfxPriceArray[(product[0] + "-" + product[1]).toUpperCase()].push(JSON.parse(data).last_price);
+function fetchBtrxPrice(symbol) {
+    btrxApi.getticker({ market : symbol }, function(data, error) {
+        btrxPrices[symbol].push(data.result.Last);
+        //console.log(symbol + ": " + btrxPrices[symbol])
     })
 }
 
-function get_all_prices() {
-    printAllPrices();
-    /**
-    for (i = 0; i < btfxProductArray.length; i++) {
-        get_btfx_prices(btfxProductArray[i])
-    };
-    **/
-    for (i = 0; i < gdaxProductArray.length; i++) {
-        get_gdax_prices(gdaxProductArray[i])
-    };
+function getLastPrice(exchange, symbol) {
+    return exchange.prices[symbol][exchange.prices[symbol].length - 1]
 }
 
-function printAllPrices() {
-    console.log("----- GDAX -----");
-    console.log(gdaxPriceArray);
-    console.log("\n----- BTFX -----");
-    console.log(btfxPriceArray);
+function getLastPrices(exchange) {
+    tempArray = {}
+    for (symbol in exchange.prices) {
+        tempArray[symbol] = getLastPrice(exchange, symbol)
+    }
+    return tempArray
 }
+
+function getDiscrepency(symbolIndex) {
+    return (getLastPrice(gdax, gdax.symbols[symbolIndex])/getLastPrice(btrx, btrx.symbols[symbolIndex]))
+}
+
 /**
 
 function getPrices() {
-
-    console.log("----- PRICES -----");
-
-    ltcPublicClient.getProductTicker(function(error, response, data) {
-
-        gdax_ltc_price = data.price;
-
-        console.log("GDAX LTC/BTC: " + gdax_ltc_price);
-
-    });
-
-
-
-    request.get(btfx_url + '/pubticker/ltcbtc', function(error, response, data) {
-
-        btfx_ltc_price = JSON.parse(data).last_price;
-
-        console.log("BTFX LTC/BTC: " + btfx_ltc_price);
-
-    });
-
-
-
-    ethPublicClient.getProductTicker(function(error, response, data) {
-
-        gdax_eth_price = data.price;
-
-        console.log("GDAX ETH/BTC: " + gdax_eth_price);
-
-    });
-
-
-
-    request.get(btfx_url + '/pubticker/ethbtc', function(error, response, data) {
-
-        btfx_eth_price = JSON.parse(data).last_price;
-
-        console.log("BTFX ETH/BTC: " + btfx_eth_price);
-
-    });
-
-
-
     console.log("GDAX/BTFX LTC/BTC Ratio: " + gdax_ltc_price / btfx_ltc_price);
-
     console.log("GDAX/BTFX ETH/BTC Ratio: " + gdax_eth_price / btfx_eth_price);
-
-
-
   	console.log("Round Trip $1000 LTC Profit (No fees): " + (1000 * (gdax_ltc_price / btfx_ltc_price) - 1000));
-
-
-
   	setTimeout(getPrices, 10000);
 
 }
