@@ -9,6 +9,9 @@ var btrxPrices = {}
 var gdaxSymbols = ['LTC-BTC', 'ETH-BTC', 'LTC-USD', 'BTC-USD', 'ETH-USD']
 var btrxSymbols = ['BTC-LTC', 'BTC-ETH', 'USDT-LTC', 'USDT-BTC', 'USDT-ETH', 'ETH-LTC']
 
+var tradeMatrix
+
+
 var gdax = new Object()
 gdax.symbols = gdaxSymbols
 gdax.prices = gdaxPrices
@@ -46,20 +49,35 @@ function printer() {
         console.log("\n----- BTRX Prices -----")
         console.log(getLastPrices(btrx))
         console.log("\nGDAX/BTRX LTC/BTC Ratio: " + getDiscrepency(0))
-        console.log("\nGDAX/BTRX ETH/BTC Ratio: " + getDiscrepency(1))
-        console.log("\nRound Trip $1000 LTC Profit (No fees): " + ((1000 * getDiscrepency(0))-1000))
         console.log("\nRound Trip $200 LTC Profit (No fees): " + ((200 * getDiscrepency(0))-200))
-        console.log("\nGDAX Round Trip $200 Trade (With fees): " + (((((200 / getLastPrice(gdax, 'BTC-USD')) * .9975) / getLastPrice(gdax, 'LTC-BTC')) * .9975) * getLastPrice(gdax, 'LTC-USD')))
+        console.log("\nRound Trip $1000 LTC Profit (No fees): " + ((1000 * getDiscrepency(0))-1000))
+
+        console.log("\n3 Trip $200 USD-(LTC-BTC-LTC)*3-USD Trade (No Fees): " + ((200 / getLastPrice(gdax, 'LTC-USD')) * .9975) * getLbTrade()*getLbTrade()*getLbTrade() * getLastPrice(gdax, 'LTC-USD'))
+        console.log("\n3 Trip $1000 USD-(LTC-BTC-LTC)*3-USD Trade (No Fees): " + (1000 / getLastPrice(gdax, 'LTC-USD')) * getLbTrade()*getLbTrade()*getLbTrade() * getLastPrice(gdax, 'LTC-USD'))
+
         console.log("\nRound Trip $200 USD-LTC-BTC-LTC-USD Trade (With Taker Fees): " + (((((((200 / getLastPrice(gdax, 'LTC-USD')) * .9975) * getLastPrice(gdax, 'LTC-BTC')) * .9975) / getLastPrice(btrx, 'BTC-LTC')) * .9975) * getLastPrice(gdax, 'LTC-USD')) * .9975)
         console.log("\nRound Trip $1000 USD-LTC-BTC-LTC-USD Trade (With Taker Fees): " + (((((((1000 / getLastPrice(gdax, 'LTC-USD')) * .9975) * getLastPrice(gdax, 'LTC-BTC')) * .9975) / getLastPrice(btrx, 'BTC-LTC')) * .9975) * getLastPrice(gdax, 'LTC-USD')) * .9975)
-        console.log("\n3 Trip $1000 USD-(LTC-BTC-LTC)*3-USD Trade (With Taker Fees): " + (((1000 / getLastPrice(gdax, 'LTC-USD')) * .9975) * getLbTrade()*getLbTrade()*getLbTrade() * getLastPrice(gdax, 'LTC-USD')) * .9975)
-        console.log("\n3 Trip $200 USD-(LTC-BTC-LTC)*3-USD Trade (With Taker Fees): " + (((200 / getLastPrice(gdax, 'LTC-USD')) * .9975) * getLbTrade()*getLbTrade()*getLbTrade() * getLastPrice(gdax, 'LTC-USD')) * .9975)
+
+        console.log("\n3 Trip $200 USD-(LTC-BTC-LTC)*3-USD Trade (With Taker Fees): " + (((200 / getLastPrice(gdax, 'LTC-USD')) * .9975) * getLbTrade(true)*getLbTrade(true)*getLbTrade(true) * getLastPrice(gdax, 'LTC-USD')) * .9975)
+        console.log("\n3 Trip $1000 USD-(LTC-BTC-LTC)*3-USD Trade (With Taker Fees): " + (((1000 / getLastPrice(gdax, 'LTC-USD')) * .9975) * getLbTrade(true)*getLbTrade(true)*getLbTrade(true) * getLastPrice(gdax, 'LTC-USD')) * .9975)
+
+        console.log("\n3 Trip $200 USD-(LTC-BTC-LTC)*3-USD Trade (With Taker Fees): " + (((200 / getLastPrice(gdax, 'LTC-USD')) * .9975) * getLbTrade(true)*getLbTrade(true)*getLbTrade(true) * getLastPrice(gdax, 'LTC-USD')) * .9975)
+        console.log("\n3 Trip $1000 USD-(LTC-BTC-LTC)*3-USD Trade (With Taker Fees): " + (((1000 / getLastPrice(gdax, 'LTC-USD')) * .9975) * getLbTrade(true)*getLbTrade(true)*getLbTrade(true) * getLastPrice(gdax, 'LTC-USD')) * .9975)
+
+        //console.log("\nGDAX Round Trip $200 Trade (With fees): " + (((((200 / getLastPrice(gdax, 'BTC-USD')) * .9975) / getLastPrice(gdax, 'LTC-BTC')) * .9975) * getLastPrice(gdax, 'LTC-USD')))
+        //console.log("\nGDAX/BTRX ETH/BTC Ratio: " + getDiscrepency(1))
+
     }
     count++;
 }
 
-function getLbTrade() {
-    return (getLastPrice(gdax, 'LTC-BTC')/getLastPrice(btrx, 'BTC-LTC'))*.9975*.9975
+function getLbTrade(fees) {
+    if (fees = true) {
+        return (getLastPrice(gdax, 'LTC-BTC')/getLastPrice(btrx, 'BTC-LTC'))*.9975*.9975
+    }
+    else {
+        return (getLastPrice(gdax, 'LTC-BTC')/getLastPrice(btrx, 'BTC-LTC'))
+    }
 }
 
 function initPrices(exchange) {
