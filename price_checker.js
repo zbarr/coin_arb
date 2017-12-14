@@ -9,33 +9,45 @@ var btrxPrices = {}
 var gdaxSymbols = ['LTC-BTC', 'ETH-BTC', 'LTC-USD', 'BTC-USD', 'ETH-USD']
 var btrxSymbols = ['BTC-LTC', 'BTC-ETH', 'USDT-LTC', 'USDT-BTC', 'USDT-ETH', 'ETH-LTC']
 
-var tradeMatrix
+var exchanges = ['gdax', 'btrx']
 
+var avgTransactionFees = {'LTC': }
 
 var gdax = new Object()
 gdax.symbols = gdaxSymbols
 gdax.prices = gdaxPrices
 gdax.takerFee = .0025
 gdax.makerFee = 0
+gdax.transferFee = 0
 
 var btrx = new Object()
 btrx.symbols = btrxSymbols
 btrx.prices = btrxPrices
 btrx.takerFee = .0025
 btrx.makerFee = .0025
+btrx.btcTransferFee = .001
+btrx.ltcTransferFee = .01
 
 var count = 0
 
-//var lbTrade = (getLastPrice(gdax, 'LTC-BTC')/getLastPrice(btrx, 'BTC-LTC'))*.9975*.9975
+var tradeMatrix = [
+    [gdax, 'USD', 'BTC', 'taker'],
+    [gdax, 'BTC', 'BTC', 'transfer'],
+    [btrx, 'BTC', 'LTC', 'taker'],
+    [btrx, 'LTC', 'LTC', 'transfer'],
+    [gdax, 'LTC', 'USD', 'taker']
+]
+
+
+// ----------------------------------------
+// ---------- MAIN CODE SECTION -----------
+// ----------------------------------------
+
 
 init();
 setInterval(printer, 5000);
 
 
-function init() {
-    initPrices(gdax);
-    initPrices(btrx);
-}
 
 function printer() {
     //Running
@@ -49,35 +61,40 @@ function printer() {
         console.log("\n----- BTRX Prices -----")
         console.log(getLastPrices(btrx))
         console.log("\nGDAX/BTRX LTC/BTC Ratio: " + getDiscrepency(0))
-        console.log("\nRound Trip $200 LTC Profit (No fees): " + ((200 * getDiscrepency(0))-200))
+        console.log("\nGDAX/BTRX ETH/BTC Ratio: " + getDiscrepency(1))
         console.log("\nRound Trip $1000 LTC Profit (No fees): " + ((1000 * getDiscrepency(0))-1000))
-
-        console.log("\n3 Trip $200 USD-(LTC-BTC-LTC)*3-USD Trade (No Fees): " + ((200 / getLastPrice(gdax, 'LTC-USD')) * .9975) * getLbTrade()*getLbTrade()*getLbTrade() * getLastPrice(gdax, 'LTC-USD'))
-        console.log("\n3 Trip $1000 USD-(LTC-BTC-LTC)*3-USD Trade (No Fees): " + (1000 / getLastPrice(gdax, 'LTC-USD')) * getLbTrade()*getLbTrade()*getLbTrade() * getLastPrice(gdax, 'LTC-USD'))
-
+        console.log("\nRound Trip $200 LTC Profit (No fees): " + ((200 * getDiscrepency(0))-200))
+        console.log("\nGDAX Round Trip $200 Trade (With fees): " + (((((200 / getLastPrice(gdax, 'BTC-USD')) * .9975) / getLastPrice(gdax, 'LTC-BTC')) * .9975) * getLastPrice(gdax, 'LTC-USD')))
         console.log("\nRound Trip $200 USD-LTC-BTC-LTC-USD Trade (With Taker Fees): " + (((((((200 / getLastPrice(gdax, 'LTC-USD')) * .9975) * getLastPrice(gdax, 'LTC-BTC')) * .9975) / getLastPrice(btrx, 'BTC-LTC')) * .9975) * getLastPrice(gdax, 'LTC-USD')) * .9975)
         console.log("\nRound Trip $1000 USD-LTC-BTC-LTC-USD Trade (With Taker Fees): " + (((((((1000 / getLastPrice(gdax, 'LTC-USD')) * .9975) * getLastPrice(gdax, 'LTC-BTC')) * .9975) / getLastPrice(btrx, 'BTC-LTC')) * .9975) * getLastPrice(gdax, 'LTC-USD')) * .9975)
-
-        console.log("\n3 Trip $200 USD-(LTC-BTC-LTC)*3-USD Trade (With Taker Fees): " + (((200 / getLastPrice(gdax, 'LTC-USD')) * .9975) * getLbTrade(true)*getLbTrade(true)*getLbTrade(true) * getLastPrice(gdax, 'LTC-USD')) * .9975)
-        console.log("\n3 Trip $1000 USD-(LTC-BTC-LTC)*3-USD Trade (With Taker Fees): " + (((1000 / getLastPrice(gdax, 'LTC-USD')) * .9975) * getLbTrade(true)*getLbTrade(true)*getLbTrade(true) * getLastPrice(gdax, 'LTC-USD')) * .9975)
-
-        console.log("\n3 Trip $200 USD-(LTC-BTC-LTC)*3-USD Trade (With Taker Fees): " + (((200 / getLastPrice(gdax, 'LTC-USD')) * .9975) * getLbTrade(true)*getLbTrade(true)*getLbTrade(true) * getLastPrice(gdax, 'LTC-USD')) * .9975)
-        console.log("\n3 Trip $1000 USD-(LTC-BTC-LTC)*3-USD Trade (With Taker Fees): " + (((1000 / getLastPrice(gdax, 'LTC-USD')) * .9975) * getLbTrade(true)*getLbTrade(true)*getLbTrade(true) * getLastPrice(gdax, 'LTC-USD')) * .9975)
-
-        //console.log("\nGDAX Round Trip $200 Trade (With fees): " + (((((200 / getLastPrice(gdax, 'BTC-USD')) * .9975) / getLastPrice(gdax, 'LTC-BTC')) * .9975) * getLastPrice(gdax, 'LTC-USD')))
-        //console.log("\nGDAX/BTRX ETH/BTC Ratio: " + getDiscrepency(1))
-
+        console.log("\n3 Trip $1000 USD-(LTC-BTC-LTC)*3-USD Trade (With Taker Fees): " + (((1000 / getLastPrice(gdax, 'LTC-USD')) * .9975) * getLbTrade()*getLbTrade()*getLbTrade() * getLastPrice(gdax, 'LTC-USD')) * .9975)
+        console.log("\n3 Trip $200 USD-(LTC-BTC-LTC)*3-USD Trade (With Taker Fees): " + (((200 / getLastPrice(gdax, 'LTC-USD')) * .9975) * getLbTrade()*getLbTrade()*getLbTrade() * getLastPrice(gdax, 'LTC-USD')) * .9975)
     }
     count++;
 }
 
-function getLbTrade(fees) {
-    if (fees = true) {
-        return (getLastPrice(gdax, 'LTC-BTC')/getLastPrice(btrx, 'BTC-LTC'))*.9975*.9975
+// ----------------------------------------
+// ----------------------------------------
+// ----------------------------------------
+
+
+function getTradeRatio(trade) {
+    if (trade[0] == gdax) {
+        if (trade[3] == "taker") {
+            return ``
+        }
     }
-    else {
-        return (getLastPrice(gdax, 'LTC-BTC')/getLastPrice(btrx, 'BTC-LTC'))
-    }
+}
+
+
+
+function init() {
+    initPrices(gdax);
+    initPrices(btrx);
+}
+
+function getLbTrade() {
+    return (getLastPrice(gdax, 'LTC-BTC')/getLastPrice(btrx, 'BTC-LTC'))*.9975*.9975
 }
 
 function initPrices(exchange) {
