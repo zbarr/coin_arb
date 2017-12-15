@@ -11,7 +11,6 @@ var btrxSymbols = ['BTC-LTC', 'BTC-ETH', 'USDT-LTC', 'USDT-BTC', 'USDT-ETH', 'ET
 
 var exchanges = ['gdax', 'btrx']
 
-var avgTransactionFees = {'LTC': }
 
 var gdax = new Object()
 gdax.symbols = gdaxSymbols

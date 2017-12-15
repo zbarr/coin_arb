@@ -4,37 +4,18 @@ const btrxApi = require('node-bittrex-api');
 
 const websocket = new gdaxApi.WebsocketClient(['BTC-USD', 'ETH-USD'])
 
-const exchanges = ['gdax']
 
-var prices = new Object()
-
-export.start = function(exchange) {
-    initPrices(prices)
-    startPriceFeeder(exchange)
-}
-
-function startPriceFeeder(exchange) {
+exports.startPriceFeeder = function(exchange) {
     websocket.on('message', data => {
         if (data.type = "received") {
             try {
-                exchange.products[data.product_id] =
+                product_id = data.product_id
+                exchange.products[product_id].lastTradeTime = data.time
+                exchange.products[product_id].lastTradePrice = data.price
+            }
+            catch(err) {
+                console.log(err)
             }
         }
-        for (product in exchange.products) {
-            if (data.product_id == product.id) {
-                if
-            }
-        }
-        exchange.product.lastTradeTime = data.time
-        exchange.productlastTradePrice = data.price
-    });
-}
-
-
-function initPrices(prices) {
-    for (exchange in exchanges) {
-        prices.exchange = exchange
-        prices.exchange.time = null
-        prices.exchange.price = null
-    }
+    })
 }
