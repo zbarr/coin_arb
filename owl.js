@@ -35,7 +35,8 @@ function Exchange(name, makerFee, takerFee) {
     this.takerFee = takerFee
 }
 
-function Product(baseCurrency, quoteCurrency) {
+function Product(exchangeProductName, baseCurrency, quoteCurrency) {
+    this.exchangeProductName = exchangeProductName
     this.baseCurrency = baseCurrency
     this.quoteCurrency = quoteCurrency
     this.lastTradeTime = null
@@ -92,6 +93,7 @@ function startPriceFeeder(exchange) {
                     data.A.forEach(function(data_for) {
                         console.log('Market Update for '+ data_for.MarketName, data_for);
                         exchange.products[]
+                        exchange.products[data_for]
                     });
                 }
             });
