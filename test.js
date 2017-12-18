@@ -1,4 +1,5 @@
 const btrxApi = require('node-bittrex-api');
+const gdaxApi = require('gdax')
 /**
 btrxApi.websockets.client(function() {
         console.log('Websocket connected');
@@ -14,6 +15,25 @@ btrxApi.websockets.client(function() {
 )
 **/
 
+const websocket = new gdaxApi.WebsocketClient(['LTC-BTC'])
+console.log('GDAX Websocket connected.')
+websocket.on('message', data => {
+
+    //if (data.type = "done") {
+        try {
+            console.log(data)
+            /**
+            exchange.products[data.product_id].lastTradeTime = data.time
+            exchange.products[data.product_id].lastTradePrice = data.price
+            **/
+        }
+        catch(err) {
+            console.log(err)
+        }
+    //}
+})
+
+/**
 
 btrxApi.websockets.client(function() {
     console.log('Websocket connected');
@@ -26,3 +46,4 @@ btrxApi.websockets.client(function() {
         }
     });
 });
+**/
