@@ -1,7 +1,8 @@
 const gdaxApi = require('gdax');
 const btrxApi = require('node-bittrex-api')
+const wsClient = require('websocket').client
 
-
+bnncWsUrl = "wss://stream.binance.com:9443/ws/ltcbtc@aggTrade"
 
 var gdaxMakerFee = 0
 var gdaxTakerFee = .0025
@@ -9,12 +10,17 @@ var gdaxTakerFee = .0025
 var btrxTakerFee = .0025
 var btrxMakerFee = .0025
 
+var bnncTakerFee = .001
+var bnncMakerFee = .001
+
 var gdax = new Exchange('gdax', gdaxMakerFee, gdaxTakerFee)
 var btrx = new Exchange('btrx', btrxMakerFee, btrxTakerFee)
+var bnnc = new Exchange('bnnc', bnncMakerFee, bnncTakerFee)
 
 //var priceFeeder = require("./priceFeeder.js")
 var gdaxProducts = require("./products/gdaxProducts.json")
 var btrxProducts = require("./products/btrxProducts.json")
+var bnncProducts = require("./products/bnncProducts.json")
 
 
 
@@ -22,21 +28,26 @@ initProducts(gdax, ['LTC-BTC'])
 console.log(gdax)
 initProducts(btrx, ['LTC-BTC'])
 console.log(btrx)
+initProducts(bnnc, ['LTC-BTC'])
+console.log(bnnc)
 
 startPriceFeeder(gdax)
 startPriceFeeder(btrx)
+//startPriceFeeder(bnnc)
 
 setInterval(printer, 1000);
 
 
 function printer() {
     getExchangeRatios(gdax, btrx, 'LTC-BTC')
+    console.log("BNNC Last Price for LTC-BTC: " + bnnc.products['LTC-BTC'].lastTradePrice)
+    //console.log(bnnc)
 }
 
 function getExchangeRatios(exchange1, exchange2, product) {
     console.log(exchange1.name + " Last Price for " + product + ": " + exchange1.products[product].lastTradePrice)
     console.log(exchange2.name + " Last Price for " + product + ": " + exchange2.products[product].lastTradePrice)
-    console.log("Price Ratio (" + exchange1.name + "/" + exchange2.name + "): " + gdax.products['LTC-BTC'].lastTradePrice / btrx.products['LTC-BTC'].lastTradePrice)
+    console.log("Price Ratio (" + exchange1.name + "/" + exchange2.name + "): " + btrx.products['LTC-BTC'].lastTradePrice / gdax.products['LTC-BTC'].lastTradePrice + "\n")
     //console.log("Moving Average Price Ratio: ")
 }
 
@@ -80,6 +91,16 @@ function initProducts(exchange, activeProductIds) {
             exchange.products[activeProductIds[i]] = new Product(products[activeProductIds[i]].MarketName, products[activeProductIds[i]].MarketCurrency, products[activeProductIds[i]].BaseCurrency)
         }
     }
+    else if (exchange.name == 'bnnc') {
+        for (i = 0; i < bnncProducts.length; i++) {
+            productId = (bnncProducts[i].baseAsset + "-" + bnncProducts[i].quoteAsset)
+            products[productId] = bnncProducts[i]
+        }
+
+        for (i = 0; i < activeProductIds.length; i++) {
+            exchange.products[activeProductIds[i]] = new Product(products[activeProductIds[i]].symbol, products[activeProductIds[i]].baseAsset, products[activeProductIds[i]].quoteAsset)
+        }
+    }
     else {
         console.log("Invalid Exchange.")
     }
@@ -97,9 +118,9 @@ function startPriceFeeder(exchange) {
         const websocket = new gdaxApi.WebsocketClient(productArray)
         console.log('GDAX Websocket connected.')
         websocket.on('message', data => {
-            if (data.type == "done" && data.reason == "filled" && data.side == "sell") {
+            if (data.type == "done" && data.reason == "filled" && data.hasOwnProperty("price")) {
                 try {
-                    console.log(data)
+                    //console.log(data)
                     exchange.products[data.product_id].lastTradeTime = data.time
                     exchange.products[data.product_id].lastTradePrice = data.price
                 }
@@ -115,9 +136,9 @@ function startPriceFeeder(exchange) {
             btrxApi.websockets.subscribe(productArray, function(data) {
                 if (data.M === 'updateExchangeState') {
                     data.A.forEach(function(data_for) {
-                        //console.log('Market Update for '+ data_for.MarketName, data_for);
                         if (data_for.Fills.length > 0) {
                             try {
+                                console.log(data)
                                 exchange.products[reverseString(data_for.MarketName)].lastTradeTime = data_for.Fills[0].TimeStamp
                                 exchange.products[reverseString(data_for.MarketName)].lastTradePrice = data_for.Fills[0].Rate
                             }
@@ -130,6 +151,44 @@ function startPriceFeeder(exchange) {
                 }
             });
         });
+    }
+    else if (exchange.name = 'bnnc') {
+        var bnncClient = new wsClient()
+        bnncClient.connect(bnncWsUrl)
+
+        bnncClient.on('connectFailed', function(err) {
+            console.log('ERROR: ' + err)
+        })
+
+        bnncClient.on('connect', function(connection) {
+            console.log('BNNC Websocket connected.')
+
+            connection.on('error', function(err) {
+                console.log("ERROR[connection]: " + err)
+            })
+
+            connection.on('close', function() {
+                console.log('BNNC Websocket connection closed.')
+            })
+
+            connection.on('message', function(message) {
+                data = JSON.parse(message.utf8Data)
+                /**
+                for (product in exchange.products) {
+                    if (exchange.products[product].exchangeProductName == data.s) {
+                        try {
+                            exchange.products[product].lastTradeTime = data.T
+                            exchange.products[product].lastTradePrice = data.p
+                        }
+                        catch (err) {
+                            console.log(err)
+                        }
+                    }
+
+                }
+                **/
+            })
+        })
     }
     else {
         console.log("Invalid exchange.")
