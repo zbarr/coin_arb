@@ -17,9 +17,11 @@
   },
   "homepage": "https://github.com/zbarr/coin_arb#readme",
   "dependencies": {
+    "express": "^4.16.2",
     "gdax": "^0.4.2",
     "node-bittrex-api": "^0.8.1",
     "request": "^2.83.0",
-    "websocket": "^1.0.25"
+    "websocket": "^1.0.25",
+    "ws": "^3.3.3"
   }
 }

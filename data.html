@@ -1,0 +1,26 @@
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>WebSockets - Simple chat</title>
+        <style>
+        </style>
+    </head>
+    <body>
+        <div id="content"></div>
+        <div>
+            Hello world
+        </div>
+        <!-- <script type="text/javascript" src="/frontend.js"></script> -->
+        <script>
+            var ws = new WebSocket('ws://192.168.70.56:8081')
+            ws.onopen = function() {
+                console.log('websocket is connected ...')
+                ws.send('connected')
+            }
+
+            ws.onmessage = function (message) {
+                console.log(message)
+            }
+        </script>
+    </body>
+</html>
