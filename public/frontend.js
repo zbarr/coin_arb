@@ -10,6 +10,7 @@ ws.onopen = function() {
 
 ws.onmessage = function (message) {
     var data = JSON.parse(message.data)
-    document.getElementById('content').innerHTML = "<h1>" + data.date + "</h1>"
+    //document.getElementById('content').innerHTML = "<h1>" + data.products['LTC-BTC'].lastTradePrice + "</h1>"
+    document.getElementById('content').innerHTML = data
     console.log(message)
 }

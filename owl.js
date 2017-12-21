@@ -38,23 +38,7 @@ startFeeder(gdax)
 startFeeder(btrx)
 startFeeder(bnnc)
 
-
-var app = express()
-
-app.use(express.static('public'));
-
-app.get('/', function (req, res) {
-    res.sendFile(__dirname + '/data.html')
-})
-/**
-app.get(path, function (req, res) {
-    res.sendfile(__dirname + '/frontend.js')
-})
-**/
-
-app.listen(8080, function () {
-    console.log((new Date()) + ' Server is listening on port 8080')
-})
+var ws = null
 
 wss = new webSocketServer({port: 8081})
 
@@ -62,13 +46,24 @@ wss.on('connection', function(ws) {
     ws.on('message', function(message) {
         console.log('received: %s', message)
     })
+
+    /**
     setInterval(function() {
         //ws.send(`${new Date()}`)
-        ws.send(JSON.stringify({"date": new Date()}))
+        exchange = gdax
+        try {
+            ws.send(JSON.stringify(exchange))
+        }
+        catch(err) {
+            //ws.close()
+            console.log(err)
+        }
     }, 1000)
+    **/
 
     ws.on('close', function(close) {
-        return
+        ws.close()
+        console.log("websocket closed")
     })
 })
 
@@ -86,6 +81,7 @@ function getExchangeRatios(exchanges, product) {
             }
         }
     }
+    wss.send(`${new Date()}`)
 }
 
 function updateCallback(exchange, product, time, price) {
