@@ -3,6 +3,7 @@ const btrxApi = require('node-bittrex-api')
 const wsClient = require('websocket').client
 const webSocketServer = require('ws').Server
 const express = require('express')
+const fs = require('fs')
 
 bnncWsUrl = "wss://stream.binance.com:9443/ws/ltcbtc@aggTrade"
 
@@ -40,9 +41,16 @@ startFeeder(bnnc)
 
 var app = express()
 
+app.use(express.static('public'));
+
 app.get('/', function (req, res) {
     res.sendFile(__dirname + '/data.html')
 })
+/**
+app.get(path, function (req, res) {
+    res.sendfile(__dirname + '/frontend.js')
+})
+**/
 
 app.listen(8080, function () {
     console.log((new Date()) + ' Server is listening on port 8080')
@@ -54,7 +62,14 @@ wss.on('connection', function(ws) {
     ws.on('message', function(message) {
         console.log('received: %s', message)
     })
-    setInterval(function() {ws.send(`${new Date()}`)}, 1000)
+    setInterval(function() {
+        //ws.send(`${new Date()}`)
+        ws.send(JSON.stringify({"date": new Date()}))
+    }, 1000)
+
+    ws.on('close', function(close) {
+        return
+    })
 })
 
 function gridPrinter(exchanges, products) {
