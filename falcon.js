@@ -40,32 +40,35 @@ startFeeder(bnnc)
 
 var ws = null
 
-wss = new webSocketServer({port: 8081})
+const wss = new webSocketServer({port: 8081})
 
 wss.on('connection', function(ws) {
+
+    //ws.isAlive = true
+    //ws.on('pong', heartbeat);
+
     ws.on('message', function(message) {
         console.log('received: %s', message)
     })
 
-    /**
-    setInterval(function() {
-        //ws.send(`${new Date()}`)
-        exchange = gdax
-        try {
-            ws.send(JSON.stringify(exchange))
-        }
-        catch(err) {
-            //ws.close()
-            console.log(err)
-        }
-    }, 1000)
-    **/
-
     ws.on('close', function(close) {
-        ws.close()
-        console.log("websocket closed")
+        console.log("Websocket closed")
     })
 })
+/**
+const interval = setInterval(function ping() {
+  wss.clients.forEach(function each(ws) {
+    if (ws.isAlive === false) return ws.terminate();
+
+    ws.isAlive = false;
+    ws.ping('', false, true);
+  });
+}, 30000);
+**/
+
+function heartbeat() {
+  this.isAlive = true;
+}
 
 function gridPrinter(exchanges, products) {
     getExchangeRatios(exchanges, 'LTC-BTC')
@@ -81,7 +84,12 @@ function getExchangeRatios(exchanges, product) {
             }
         }
     }
-    wss.send(`${new Date()}`)
+    //wss.ws.send(`${new Date()}`)
+    wss.clients.forEach(function(client) {
+        //client.send(`${new Date()}`);
+        //client.send(JSON.stringify(gdax))
+        client.send(JSON.stringify(exchanges))
+    });
 }
 
 function updateCallback(exchange, product, time, price) {
