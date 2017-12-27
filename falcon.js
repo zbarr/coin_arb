@@ -5,7 +5,9 @@ const webSocketServer = require('ws').Server
 const express = require('express')
 const fs = require('fs')
 
-bnncWsUrl = "wss://stream.binance.com:9443/ws/ltcbtc@aggTrade"
+//bnncWsUrl = "wss://stream.binance.com:9443/ws/stream?streams="
+bnncWsUrl = "wss://stream.binance.com:9443/stream?streams="
+
 
 var gdaxMakerFee = 0
 var gdaxTakerFee = .0025
@@ -27,11 +29,13 @@ var bnncProducts = require("./products/bnncProducts.json")
 
 var exchanges = [gdax, btrx, bnnc]
 
-initProducts(gdax, ['LTC-BTC'])
+var activeProducts = ['LTC-BTC', 'ETH-BTC', 'BTC-USDT']
+
+initProducts(gdax, ['LTC-BTC', 'ETH-BTC'])
 console.log(gdax)
-initProducts(btrx, ['LTC-BTC'])
+initProducts(btrx, activeProducts)
 console.log(btrx)
-initProducts(bnnc, ['LTC-BTC'])
+initProducts(bnnc, activeProducts)
 console.log(bnnc)
 
 startFeeder(gdax)
@@ -44,9 +48,6 @@ const wss = new webSocketServer({port: 8081})
 
 wss.on('connection', function(ws) {
 
-    //ws.isAlive = true
-    //ws.on('pong', heartbeat);
-
     ws.on('message', function(message) {
         console.log('received: %s', message)
     })
@@ -55,20 +56,21 @@ wss.on('connection', function(ws) {
         console.log("Websocket closed")
     })
 })
-/**
-const interval = setInterval(function ping() {
-  wss.clients.forEach(function each(ws) {
-    if (ws.isAlive === false) return ws.terminate();
 
-    ws.isAlive = false;
-    ws.ping('', false, true);
-  });
-}, 30000);
-**/
 
-function heartbeat() {
-  this.isAlive = true;
+function printer() {
+    for (i = 0; i < activeProducts.length; i++ ) {
+
+        console.log("\n----- " + activeProducts[i] + " -----")
+
+        for (j = 0; j < exchanges.length; j++) {
+            if (exchanges[j].products[activeProducts[i]]) {
+                console.log(exchanges[j].name + ": " + exchanges[j].products[activeProducts[i]].lastTradePrice)
+            }
+        }
+    }
 }
+
 
 function gridPrinter(exchanges, products) {
     getExchangeRatios(exchanges, 'LTC-BTC')
@@ -95,7 +97,14 @@ function getExchangeRatios(exchanges, product) {
 function updateCallback(exchange, product, time, price) {
     exchange.products[product].lastTradeTime = time
     exchange.products[product].lastTradePrice = price
-    getExchangeRatios(exchanges, product)
+
+    wss.clients.forEach(function(client) {
+        //client.send(`${new Date()}`);
+        //client.send(JSON.stringify(gdax))
+        client.send(JSON.stringify(exchanges))
+    });
+
+    printer()
 }
 
 function Exchange(name, makerFee, takerFee) {
@@ -221,8 +230,24 @@ function startBtrxFeeder(exchange, productArray) {
 }
 
 function startBnncFeeder(exchange) {
+
+    var streamString = ""
+
+    var first = true
+
+    for (product in exchange.products) {
+        if (!first) {
+            streamString+= "/"
+        }
+        streamString+= exchange.products[product].exchangeProductName.toLowerCase() + "@aggTrade"
+        first = false
+
+    }
+
+    console.log(bnncWsUrl + streamString)
+
     var bnncClient = new wsClient()
-    bnncClient.connect(bnncWsUrl)
+    bnncClient.connect(bnncWsUrl + streamString)
 
     bnncClient.on('connectFailed', function(err) {
         console.log('ERROR: ' + err)
@@ -240,9 +265,13 @@ function startBnncFeeder(exchange) {
         })
 
         connection.on('message', function(message) {
-            data = JSON.parse(message.utf8Data)
+
+            payload = JSON.parse(message.utf8Data)
+
+            data = payload.data
+
             for (product in exchange.products) {
-                if (exchange.products[product].exchangeProductName == data.s) {
+                if (exchange.products[product].exchangeProductName == payload.data.s) {
                     try {
                         updateCallback(exchange, product, data.T, data.p)
                     }

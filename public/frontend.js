@@ -5,22 +5,28 @@ var ws = new WebSocket(away)
 
 var messageCount = 0
 
-document.getElementById('header').innerHTML = "Falcon"
+document.getElementById('header').innerHTML = "Scoreboard"
 
 ws.onopen = function() {
     console.log('Websocket connected...')
     ws.send('connected')
 }
 
+
+var scoreboardProducts = ['LTC-BTC', 'ETH-BTC', 'BTC-USDT']
+
+
 ws.onmessage = function (message) {
 
     var exchanges = JSON.parse(message.data)
 
     if (messageCount == 0) {
-        createTable(exchanges, 'LTC-BTC')
+        //createTable(exchanges, 'LTC-BTC')
+        createScoreboard(exchanges, scoreboardProducts)
     }
 
-    updateTable(exchanges, 'LTC-BTC')
+    //updateTable(exchanges, 'LTC-BTC')
+    updateScoreboard(exchanges, scoreboardProducts)
     console.log(message)
     messageCount++
 }
@@ -30,11 +36,24 @@ function updateTable(exchanges, product) {
 
     for (i = 0; i < exchanges.length; i++) {
         for (j = 0; j < exchanges.length; j++) {
+
+            cell = table.rows[i+1].cells[j+1]
+            ltp1 = exchanges[i].products[product].lastTradePrice
+            ltp2 = exchanges[j].products[product].lastTradePrice
+
             if (i != j) {
-                table.rows[i+1].cells[j+1].textContent = exchanges[i].products[product].lastTradePrice / exchanges[j].products[product].lastTradePrice
+                cell.textContent = ltp1 / ltp2
+                if (Math.abs(1 - (ltp1/ltp2)) > .005) {
+                    cell.style.backgroundColor = "green"
+                }
+                else {
+                    cell.style.backgroundColor = null
+                }
             }
             else {
-                table.rows[i+1].cells[j+1].textContent = exchanges[i].products[product].lastTradePrice
+
+                cell.textContent = ltp1
+
             }
         }
     }
@@ -65,8 +84,76 @@ function createTable(exchanges, product) {
         }
     }
     document.getElementById('content').appendChild(table)
-    //return table
 }
+
+function createScoreboard(exchanges, products) {
+    var row = null, table = document.createElement("table")
+    table.className = "table table-hover table-bordered"
+
+    row = table.insertRow()
+    row.insertCell().textContent = "Scoreboard"
+
+    for (k = 0; k < products.length; k++) {
+        row.insertCell().textContent = products[k]
+    }
+
+    for (i = 0; i < exchanges.length; i++) {
+        row = table.insertRow()
+        row.insertCell().textContent = exchanges[i].name
+
+        for (j = 0; j < products.length; j++) {
+            row.insertCell().textContent = null
+        }
+    }
+
+    document.getElementById('content').appendChild(table)
+
+}
+
+function updateScoreboard(exchanges, products) {
+    table = document.getElementById('content').childNodes[0]
+
+    for (var i = 0; i < products.length; i++) {
+
+        var quickArray = []
+
+        for (var j = 0; j < exchanges.length; j++) {
+
+            cell = table.rows[j+1].cells[i+1]
+            //cell.style.backgroundColor = "rgb(0, 255, 0)"
+
+            if (exchanges[j].products[products[i]]) {
+                quickArray.push(cell)
+                if (exchanges[j].products[products[i]].lastTradePrice) {
+                    cell.textContent = exchanges[j].products[products[i]].lastTradePrice
+                }
+            }
+            else {
+                cell.textContent = "Not Available"
+            }
+
+        }
+        colorizeCells(quickArray)
+    }
+}
+
+
+function colorizeCells(cellArray) {
+    cellArray.sort(function(a, b) {
+        return a.textContent - b.textContent
+    })
+
+    cellArray[0].style.backgroundColor = "red"
+
+    for (var i = 1; i < (cellArray.length - 1); i ++) {
+        cellArray[i].style.backgroundColor = "white"
+    }
+
+    cellArray[cellArray.length -1].style.backgroundColor = "green"
+
+}
+
+
 
 function updateClock () {
   var currentTime = new Date ( );
