@@ -29,9 +29,10 @@ var bnncProducts = require("./products/bnncProducts.json")
 
 var exchanges = [gdax, btrx, bnnc]
 
-var activeProducts = ['LTC-BTC', 'ETH-BTC', 'BTC-USDT']
+var activeProducts = ['LTC-BTC', 'ETH-BTC', 'BTC-USDT', 'LTC-USDT', 'BTC-USD', 'LTC-USD']
 
-initProducts(gdax, ['LTC-BTC', 'ETH-BTC'])
+//initProducts(gdax, ['LTC-BTC', 'ETH-BTC', 'BTC-USD'])
+initProducts(gdax, activeProducts)
 console.log(gdax)
 initProducts(btrx, activeProducts)
 console.log(btrx)
@@ -133,7 +134,12 @@ function initProducts(exchange, activeProductIds) {
         }
 
         for (i = 0; i < activeProductIds.length; i++) {
-            exchange.products[activeProductIds[i]] = new Product(activeProductIds[i], products[activeProductIds[i]].base_currency, products[activeProductIds[i]].quote_currency)
+            try {
+                exchange.products[activeProductIds[i]] = new Product(activeProductIds[i], products[activeProductIds[i]].base_currency, products[activeProductIds[i]].quote_currency)
+            }
+            catch (err) {
+                console.log(activeProductIds[i] + " is not available on " + exchange.name)
+            }
         }
     }
     else if (exchange.name == 'btrx') {
@@ -143,7 +149,12 @@ function initProducts(exchange, activeProductIds) {
         }
 
         for (i = 0; i < activeProductIds.length; i++) {
-            exchange.products[activeProductIds[i]] = new Product(products[activeProductIds[i]].MarketName, products[activeProductIds[i]].MarketCurrency, products[activeProductIds[i]].BaseCurrency)
+            try {
+                exchange.products[activeProductIds[i]] = new Product(products[activeProductIds[i]].MarketName, products[activeProductIds[i]].MarketCurrency, products[activeProductIds[i]].BaseCurrency)
+            }
+            catch (err) {
+                console.log(activeProductIds[i] + " is not available on " + exchange.name)
+            }
         }
     }
     else if (exchange.name == 'bnnc') {
@@ -153,7 +164,12 @@ function initProducts(exchange, activeProductIds) {
         }
 
         for (i = 0; i < activeProductIds.length; i++) {
-            exchange.products[activeProductIds[i]] = new Product(products[activeProductIds[i]].symbol, products[activeProductIds[i]].baseAsset, products[activeProductIds[i]].quoteAsset)
+            try {
+                exchange.products[activeProductIds[i]] = new Product(products[activeProductIds[i]].symbol, products[activeProductIds[i]].baseAsset, products[activeProductIds[i]].quoteAsset)
+            }
+            catch (err) {
+                console.log(activeProductIds[i] + " is not available on " + exchange.name)
+            }
         }
     }
     else {

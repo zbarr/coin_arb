@@ -13,7 +13,7 @@ ws.onopen = function() {
 }
 
 
-var scoreboardProducts = ['LTC-BTC', 'ETH-BTC', 'BTC-USDT']
+var scoreboardProducts = ['LTC-BTC', 'ETH-BTC', 'BTC-USDT', 'LTC-USDT', 'BTC-USD', 'LTC-USD']
 
 
 ws.onmessage = function (message) {
@@ -123,9 +123,12 @@ function updateScoreboard(exchanges, products) {
             //cell.style.backgroundColor = "rgb(0, 255, 0)"
 
             if (exchanges[j].products[products[i]]) {
-                quickArray.push(cell)
                 if (exchanges[j].products[products[i]].lastTradePrice) {
                     cell.textContent = exchanges[j].products[products[i]].lastTradePrice
+                    quickArray.push(cell)
+                }
+                else {
+                    cell.textContent = "Waiting"
                 }
             }
             else {
