@@ -120,7 +120,6 @@ function updateScoreboard(exchanges, products) {
         for (var j = 0; j < exchanges.length; j++) {
 
             cell = table.rows[j+1].cells[i+1]
-            //cell.style.backgroundColor = "rgb(0, 255, 0)"
 
             if (exchanges[j].products[products[i]]) {
                 if (exchanges[j].products[products[i]].lastTradePrice) {
@@ -136,10 +135,11 @@ function updateScoreboard(exchanges, products) {
             }
 
         }
-        colorizeCells(quickArray)
+        if (quickArray.length > 0) {
+            colorizeCells(quickArray)
+        }
     }
 }
-
 
 function colorizeCells(cellArray) {
     cellArray.sort(function(a, b) {
@@ -155,8 +155,6 @@ function colorizeCells(cellArray) {
     cellArray[cellArray.length -1].style.backgroundColor = "green"
 
 }
-
-
 
 function updateClock () {
   var currentTime = new Date ( );

@@ -1,6 +1,7 @@
 const express = require('express')
 var app = express()
 
+//hooks up middleware
 app.use(express.static('public'));
 
 app.get('/', function (req, res) {
